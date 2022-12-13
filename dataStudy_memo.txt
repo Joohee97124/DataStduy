@@ -1,0 +1,160 @@
+[ 1-3 ]
+판다스 라이브러리 불러오기
+import pandas as pd
+# as pd : pandas 라이브러리를 pd라는 별칭으로 불러서 사용하겠다는 의미
+
+파일 로드하기
+df_last = pd.read_csv("data/주택도시보증공사_전국 평균 분양가격(2019년 12월).csv", encoding="cp949")
+# csv 파일을 pandas로 읽어오겠다
+# "경로/파일명.csv" 
+# 인코딩은 cp949 (=UTF-8)
+# 불러온 파일은 변수에 저장해준다
+
+불러온 파일 확인하기
+df_last.shape
+# (행,열) 확인하기
+
+df_last.head()
+# 맨 위부터 default 5개의 데이터 미리보기
+df_last.tail()
+# 맨 마지막부터 default 5개의 데이터 미리보기
+
+
+[ 1-4 ]
+데이터 요약하기
+df_last.info()
+
+결측치 보기
+df_last.isnull()
+# T/F로 결측치를 보게 된다
+
+df_last.isnull().sum()
+# 결측치의 개수를 보여준다
+
+df_last.isna()
+df_last.isna().sum()
+# df_last.isnull() 과 같은 역할을 한다
+
+데이터 타입 변경하기
+df_last["분양가격(㎡)"].astype(int)
+# .astype() : 타입변환 메소드
+# --> 이 메소드는 공백문자 (' ') 가 있으면 int로 바꿔줄 수 없다
+
+pd.to_numeric(df_last["분양가격(㎡)"])
+# --> 이 메소드는 공백문자 (' ') 가 있으면 int로 바꿔줄 수 없다
+pd.to_numeric(df_last["분양가격(㎡)"],errors='coerce')
+# 옵션 errors='coerce' : 공백 문자에 강제로 NaN(결측치) 값을 넣어주겠다는 의미
+
+df_last["분양가격"] = pd.to_numeric(df_last["분양가격(㎡)"],errors='coerce')
+# 분양가격이라는 컬럼에 넣어준다
+df_last["분양가격"].head(1)
+
+# object → float 형태로 바뀌었다
+# int가 아닌 float으로 바뀐 까닭 : panadas의 결측치의 data type이 float이기 때문이다
+
+
+
+[ 1-5 ]
+데이터 요약하기 : describe()
+df_last.info()
+df_last["분양가격(㎡)"].describe()
+# describe() : 기술통계값을 한 번에 볼 수 있다
+
+# object 타입의 describe()
+# count : 총 데이터 개수
+# unique : 중복되지 않는 값의 수 →  카테고리 , string데이터 요약 시 사용
+# top : 가장 빈번하게 들어있는 데이터
+# freq : 가장 빈번하게 등장하는 문자(top의 값) 가 몇 번 등장하는지
+
+# float(int) 수치데이터 타입의 describe()
+# count 
+# mean : 평균
+# std : 표준편차
+# min 
+# 25% : 1사분위수 → 전체 데이터를 일렬로 쭉 정렬했을 때 25% 에 있는 데이터들
+# 50% : 중앙값 
+# 75% : 3사분위수 
+# max
+
+# describe() 했을 때 집중적으로 봐야 할 곳 : mean() 평균 / 50% 중앙값 이 얼마나 차이가 나는지 
+
+
+[ 1-6 ]
+특정 컬럼의 unique() 값 보기
+df_last["규모구분"].unique()
+
+데이터 내 문구 바꾸기
+df_last["규모구분"].replace("전용면적","")
+# replace() 메소드는 텍스트가 완전히 일치해야 바뀔 수 있다
+# str의 replace 를 사용하지 않으면 텍스트가 바뀌어지지 않는다
+
+df_last["전용면적"] = df_last["규모구분"].str.replace("전용면적","")
+df_last["전용면적"] = df_last["전용면적"].str.replace(" ","").str.strip()
+# .str.strip() : 텍스트 앞뒤에 있는 모든 공백 제거
+
+컬럼 제거하기
+df_last = df_last.drop(["규모구분", "분양가격(㎡)"] , axis=1)
+# axis : 0행 . 1열
+
+
+[ 1-7 ]
+groupby 이용하기
+
+df_last.groupby(["지역명"]).mean()
+# 지역명에 따라 모든 컬럼의 평균을 내줌
+df_last.groupby(["지역명"])["평당분양가격"].mean()
+# 지역명에 따라 평당분양가격에 대한 평균을 내줌
+df_last.groupby(["전용면적"])["평당분양가격"].mean()
+# 전용면적으로 분양가격의 평균을 내줌
+
+df_last.groupby(["지역명","전용면적"])["평당분양가격"].mean().unstack()
+# .unstack() : 끝에 있는 인덱스 (여기서는 전용면적) 가 컬럼값으로 오게 된다 / 지역명도 같이 데이터프레임형태로 바꿔줌
+df_last.groupby(["지역명","전용면적"])["평당분양가격"].mean().unstack().round()
+# .round() : 뒤의 소수점을 짧게 줄여준다
+
+df_last.groupby(["연도","지역명"])["평당분양가격"].mean().unstack().T
+# .T : 인덱스 컬럼인 연도와 지역명의 순서를 바꿔주는 옵션 (물리적으로 순서를 바꿔주는 것과 같은 결과를 보여준다)
+g.unstack().transpose()
+# .transpose() : .T와 같은 역할 (인덱스의 순서를 바꿔준다)
+
+# 지역명, 전용면적으로 평당분양가격의 평균을 구합니다.
+df_last.groupby(["지역명","전용면적"])["평당분양가격"].mean().unstack().round()
+
+
+[ 1-8 ]
+groupby VS pivot_table
+- groupby로 할 수 있는 것은 모두 pivot_table 로도 사용할 수 있다
+- groupby는 결과값이 3G 형태로 반환되기에 pivot_table (데이터프레임 형태로 반환) 보다 빠르게 결과값이 반환된다
+
+pivot VS pivot_table 
+- pivot : 연산 X (aggfunc이 없다)
+- pivot_table : 연산 가능
+
+pivot_table 이용하기
+pd.pivot_table(데이터프레임, index=인덱스로 쓸 컬럼, values=사용할 컬럼)
+pd.pivot_table(df_last, index=["지역명"], values=["평당분양가격"], aggfunc="mean")
+# aggrunc : 연산해주는 기능 
+# mean , sum , count 등을 이용 가능
+# aggfunc의 default값 = mean()
+
+df_last.pivot_table(index=["전용면적","지역명"], values="평당분양가격")
+# 인덱스가 2개 이상일 경우 []대괄호를 적어줘야한다
+
+df_last.pivot_table(index="전용면적", columns="지역명", values="평당분양가격").round()
+# .unstack() 과 같은 기능을 사용하기 위해 columns 를 이용했다 (지역명을 행 컬럼으로 두기 위함)
+
+특정 데이터 가져오기
+p = df_last.pivot_table(index=["연도","지역명"], values="평당분양가격")
+p.loc[2018]
+# loc : 행을 기준으로 2018년의 데이터들을 가져오게 된다
+
+
+
+
+
+
+
+
+
+
+
